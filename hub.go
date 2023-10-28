@@ -3,43 +3,43 @@ package main
 import "encoding/json"
 
 var h = hub{
-    c: make(map[*connection]bool),
-    u: make(chan *connection),
-    b: make(chan []byte),
-    r: make(chan *connection),
+	clients:  make(map[*connection]bool),
+	user:     make(chan *connection),
+	data:     make(chan []byte),
+	received: make(chan *connection),
 }
 
 type hub struct {
-    c map[*connection]bool
-    b chan []byte
-    r chan *connection
-    u chan *connection
+	clients  map[*connection]bool
+	data     chan []byte
+	received chan *connection
+	user     chan *connection
 }
 
 func (h *hub) run() {
-    for {
-        select {
-        case c := <-h.r:
-            h.c[c] = true
-            c.data.Ip = c.ws.RemoteAddr().String()
-            c.data.Type = "handshake"
-            c.data.UserList = user_list
-            data_b, _ := json.Marshal(c.data)
-            c.sc <- data_b
-        case c := <-h.u:
-            if _, ok := h.c[c]; ok {
-                delete(h.c, c)
-                close(c.sc)
-            }
-        case data := <-h.b:
-            for c := range h.c {
-                select {
-                case c.sc <- data:
-                default:
-                    delete(h.c, c)
-                    close(c.sc)
-                }
-            }
-        }
-    }
+	for {
+		select {
+		case cc := <-h.received:
+			h.clients[cc] = true
+			cc.data.Ip = cc.ws.RemoteAddr().String()
+			cc.data.Type = "handshake"
+			cc.data.UserList = user_list
+			data_b, _ := json.Marshal(cc.data)
+			cc.sc <- data_b
+		case c := <-h.user:
+			if _, ok := h.clients[c]; ok {
+				delete(h.clients, c)
+				close(c.sc)
+			}
+		case data := <-h.data:
+			for c := range h.clients {
+				select {
+				case c.sc <- data:
+				default:
+					delete(h.clients, c)
+					close(c.sc)
+				}
+			}
+		}
+	}
 }
