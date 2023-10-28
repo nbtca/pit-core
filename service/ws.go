@@ -27,16 +27,17 @@ func close(conn *websocket.Conn) {
 func Loop(conn *websocket.Conn) {
 	open(conn)
 	defer close(conn)
+	//循环读取消息
 	for {
 		messageType, data, err := conn.ReadMessage()
 		if err != nil {
 			log.Println(err)
-			return
+			return//直到出错才退出循环
 		}
-		if err := conn.WriteMessage(messageType, data); err != nil {
-			log.Println(err)
-			return
-		}
+		// if err := conn.WriteMessage(messageType, data); err != nil {
+		// 	log.Println(err)
+		// 	return
+		// }
 		log.Println(string(data))
 		processMessage(conn, string(data))
 	}
