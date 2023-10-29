@@ -1,24 +1,27 @@
 package service
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
 )
-struct User {
+
+type User struct {
 	id int
 }
 
-var connections = make(map[*websocket.Conn]int)
+var connections = make(map[*websocket.Conn]bool)
 
-func processMessage(conn *websocket.Conn, msg string) {
-	conn.WriteMessage(websocket.TextMessage, []byte("hello"))
+func processMessage(msg string) {
+	for conn := range connections {
+		conn.WriteMessage(websocket.TextMessage, []byte("hello"))
+	}
 }
 
 func open(conn *websocket.Conn) {
 	//添加连接
-	connections[conn] = 1
-
+	connections[conn] = true
 }
 func close(conn *websocket.Conn) {
 	//删除连接
@@ -32,13 +35,15 @@ func Loop(conn *websocket.Conn) {
 		messageType, data, err := conn.ReadMessage()
 		if err != nil {
 			log.Println(err)
-			return//直到出错才退出循环
+			return //直到出错才退出循环
 		}
 		// if err := conn.WriteMessage(messageType, data); err != nil {
 		// 	log.Println(err)
 		// 	return
 		// }
-		log.Println(string(data))
-		processMessage(conn, string(data))
+		fmt.Println(messageType)
+		fmt.Println(messageType)
+		// log.Println(string(data))
+		processMessage(string(data))
 	}
 }
