@@ -16,13 +16,12 @@ type User struct {
 }
 
 type Msg struct {
-	SendUser string
-	ReceUser string
-	SendTime string
-	Msg      string
-	IsPublic bool
-	IsRecv   bool
-	IsInfo   bool
+	SendUser string `json:"send_user"`
+	RecvUser string `json:"recv_user"`
+	SendTime string `json:"send_time"`
+	Msg      string `json:"msg"`
+	IsPublic bool   `json:"is_public"`
+	IsInfo   bool   `json:"is_info"`
 }
 
 func (msg *Msg) ParseMessage(message []byte) error {
@@ -38,7 +37,6 @@ func (msg *Msg) EncodeMessage() []byte {
 	return b
 }
 
-var msgs = 
 var users = make(map[string]User)
 
 func HandleConnection(conn *websocket.Conn, r *http.Request) {
@@ -74,7 +72,6 @@ func HandleConnection(conn *websocket.Conn, r *http.Request) {
 		if msg.IsPublic {
 			sendPublicMessage(msg)
 		} else {
-			sendPublicMessage(msg)
 			sendPrivateMessage(msg)
 		}
 	}
@@ -93,13 +90,26 @@ func sendPublicMessage(msg Msg) {
 }
 
 func sendPrivateMessage(msg Msg) {
-	for _, user := range users {
-		if user.Conn != nil {
-			err := user.Conn.WriteMessage(websocket.TextMessage, msg.EncodeMessage())
+	recvUser, ok := users[msg.RecvUser]
+	if ok {
+		if recvUser.Conn != nil {
+			err := recvUser.Conn.WriteMessage(websocket.TextMessage, msg.EncodeMessage())
 			if err != nil {
 				log.Println(err)
 			}
 		}
+	} else {
+		msg = Msg{
+			SendTime: time.Now().Format("2006-01-02 15:04:05"),
+			Msg:      "用户不存在",
+			IsPublic: true,
+			IsInfo:   true,
+		}
+		err := users[msg.SendUser].Conn.WriteMessage(websocket.TextMessage, msg.EncodeMessage())
+		if err != nil {
+			log.Println(err)
+		}
+
 	}
 
 }
@@ -110,10 +120,9 @@ func userOn(user User) {
 	fmt.Println(str)
 	msg := Msg{
 		SendUser: user.Name,
-		SendTime: time.Now().Format("2006-01-02 15:04:05"), // 日期格式化为 yyyy-MM-dd HH:mm:ss 格式
+		SendTime: time.Now().Format("2006-01-02 15:04:05"),
 		Msg:      str,
 		IsPublic: true,
-		IsRecv:   true,
 		IsInfo:   true,
 	}
 	sendPublicMessage(msg)
@@ -128,13 +137,11 @@ func userOff(user User) {
 	}
 	str := fmt.Sprintf("%s 离开了聊天室，当前聊天室人数为 %d。", user.Name, len(users))
 	fmt.Println(str)
-	// 发送下线消息给其他用户
 	msg := Msg{
 		SendUser: user.Name,
 		SendTime: time.Now().Format("2006-01-02 15:04:05"),
 		Msg:      str,
 		IsPublic: true,
-		IsRecv:   true,
 		IsInfo:   true,
 	}
 	sendPublicMessage(msg)
