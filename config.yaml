@@ -1,0 +1,16 @@
+system:
+  port: "8080"
+
+mysql:
+  host: "127.0.0.1"
+  port: "3306"
+  db-name: "v1"
+  username: "root"
+  password: ""
+  config: "charset=utf8mb4&parseTime=True&loc=Local"
+
+redis:
+  redis-db: "0"
+  redis-addr: ""
+  redis-password: ""
+  redis-db-name: ""
